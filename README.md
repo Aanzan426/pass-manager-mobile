@@ -35,7 +35,7 @@ pass_manager_mobile/
 └── icons/                 ← app icons (192/512 + maskable)
 ```
 
-## Running it on your phone (Samsung Galaxy M21, Chrome)
+## Running it on your phone
 
 A PWA must be opened from a **secure context** (https, or `localhost`) for the
 browser crypto + offline install to work. Two easy ways:
@@ -58,7 +58,7 @@ https (e.g. Tailscale Serve).
 
 ---
 
-## GitHub Pages — everything to know (read this before you forget)
+## GitHub Pages — everything to know
 
 > Future-you, this section exists so you don't have to relearn all of this. Here
 > is the whole picture in one place.
