@@ -41,7 +41,8 @@ function escapeHtml(s) {
   ));
 }
 
-// ---------- setup ----------
+// ---------- setup (step 1 of 2: master password) ----------
+let _pendingMaster = null; // held only between the master step and the export step
 $("#setup-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const master = $("#setup-master").value;
@@ -54,11 +55,9 @@ $("#setup-form").addEventListener("submit", async (e) => {
     err.textContent = "This page needs a secure context (https or localhost) to encrypt your vault. See the manual.";
     return;
   }
-  try {
-    await PMStore.createMaster(master);
-    toast("Vault created");
-    route();
-  } catch (e2) { err.textContent = e2.message; }
+  // Step 2: ask for the export password before actually creating the vault.
+  _pendingMaster = master;
+  openExportSetup("create");
 });
 
 // ---------- unlock ----------
@@ -279,6 +278,120 @@ $("#rotate-go").addEventListener("click", async () => {
     loadVault();
   } catch (e) { msg.className = "form-msg error"; msg.textContent = e.message; }
 });
+
+// ---------- export password setup (the 2nd password) ----------
+let _exportSetupMode = "create"; // "create" = first run, "set" = existing vault
+
+function openExportSetup(mode) {
+  _exportSetupMode = mode;
+  $("#export-setup-pass").value = "";
+  $("#export-setup-confirm").value = "";
+  $("#export-setup-msg").textContent = "";
+  if (mode === "create") {
+    $("#export-setup-title").textContent = "Create your export password";
+    $("#export-setup-note").textContent =
+      "This second password will be required whenever you export your saved passwords to an " +
+      "Excel (.xlsx) file. Keep it in your head — like your master password, it is never stored anywhere.";
+    $("#export-setup-go").textContent = "Create vault →";
+    $("#export-setup-cancel").textContent = "Back";
+  } else {
+    $("#export-setup-title").textContent = "Set your export password";
+    $("#export-setup-note").textContent =
+      "This vault was created before exporting existed. Set a second password now — it is required " +
+      "whenever you export to Excel, and is never stored. We'll export right after.";
+    $("#export-setup-go").textContent = "Save & export →";
+    $("#export-setup-cancel").textContent = "Cancel";
+  }
+  $("#export-setup-modal").hidden = false;
+  $("#export-setup-pass").focus();
+}
+function closeExportSetup() { $("#export-setup-modal").hidden = true; }
+
+$("#export-setup-cancel").addEventListener("click", () => {
+  closeExportSetup();
+  _pendingMaster = null;
+});
+
+$("#export-setup-go").addEventListener("click", async () => {
+  const pw = $("#export-setup-pass").value;
+  const confirm = $("#export-setup-confirm").value;
+  const msg = $("#export-setup-msg");
+  msg.className = "form-msg error";
+  if (pw.length < 6) { msg.textContent = "Export password must be at least 6 characters."; return; }
+  if (pw !== confirm) { msg.textContent = "The two export passwords do not match."; return; }
+  try {
+    if (_exportSetupMode === "create") {
+      await PMStore.createMaster(_pendingMaster, pw);
+      _pendingMaster = null;
+      closeExportSetup();
+      toast("Vault created");
+      route();
+    } else {
+      await PMStore.setExportPassword(pw);
+      closeExportSetup();
+      doExport();
+    }
+  } catch (e) { msg.textContent = e.message; }
+});
+
+// ---------- export (verify the 2nd password, then build the encrypted .xlsx) ----------
+$("#nav-export").addEventListener("click", (e) => {
+  e.preventDefault();
+  if (!PMStore.isUnlocked()) { route(); return; }
+  if ((PMStore.listEntries() || []).length === 0) { toast("Vault is empty — nothing to export"); return; }
+  if (!PMCrypto.hasSubtle()) { toast("Export needs a secure context (https or localhost)"); return; }
+  if (!PMStore.hasExportPassword()) { openExportSetup("set"); return; }
+  openExportVerify();
+});
+
+function openExportVerify() {
+  $("#export-verify-pass").value = "";
+  $("#export-verify-msg").textContent = "";
+  $("#export-verify-modal").hidden = false;
+  $("#export-verify-pass").focus();
+}
+function closeExportVerify() { $("#export-verify-modal").hidden = true; }
+
+$("#export-verify-cancel").addEventListener("click", closeExportVerify);
+$("#export-verify-go").addEventListener("click", async () => {
+  const pw = $("#export-verify-pass").value;
+  const msg = $("#export-verify-msg");
+  msg.className = "form-msg error";
+  if (!pw) { msg.textContent = "Enter your export password."; return; }
+  const ok = await PMStore.verifyExportPassword(pw);
+  if (!ok) { msg.textContent = "Incorrect export password."; return; }
+  closeExportVerify();
+  doExport();
+});
+
+function exportFilename() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `vault-export-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.xlsx`;
+}
+
+async function doExport() {
+  if (!PMCrypto.hasSubtle()) { toast("Export needs a secure context (https or localhost)"); return; }
+  toast("Encrypting your backup… this can take a few seconds");
+  // Let the toast paint before the synchronous, CPU-heavy key derivation runs.
+  await new Promise((r) => setTimeout(r, 60));
+  try {
+    const rows = PMExport.entriesToRows(PMStore.listEntries());
+    const bytes = await PMExport.buildEncryptedXlsx(PMStore.getMaster(), rows);
+    const blob = new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = exportFilename();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast("Exported — open it with your master password");
+  } catch (e) { toast(e.message || "Export failed"); }
+}
 
 // ---------- manual ----------
 function renderManual() {

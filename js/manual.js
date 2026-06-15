@@ -19,7 +19,8 @@ phone, fully offline. Same engine as the desktop app — same phrase gives the s
   <a href="#m-sync">7. Syncing to your PC</a>
   <a href="#m-security">8. Security model</a>
   <a href="#m-edge">9. Edge cases &amp; gotchas</a>
-  <a href="#m-recover">10. Recovery</a>
+  <a href="#m-backup">10. Backup: export to Excel</a>
+  <a href="#m-recover">11. Recovery</a>
 </div>
 
 <h2 id="m-idea">1. The core idea</h2>
@@ -97,7 +98,25 @@ nothing breaks — you just sync later.</p>
   <tr><td>Different phrase</td><td>Completely different passwords. A single character change "screws you up" by design.</td></tr>
 </table>
 
-<h2 id="m-recover">10. Recovery</h2>
+<h2 id="m-backup">10. Backup: export to Excel (your failsafe)</h2>
+<p>If you ever lose your phone, an export is your safety net. Tap <strong>⤓ Export</strong> in the
+top bar to save your whole vault as a <strong>password-protected Excel file</strong>
+(<code>.xlsx</code>), with the columns <em>Site, Username/Email, Length, Note, Password</em>.</p>
+<p>Two passwords are involved, on purpose:</p>
+<ul>
+  <li><strong>Export password</strong> (the second password you set when creating the vault): you're
+  asked for it <em>before</em> the file is created, so someone who grabs your unlocked phone can't
+  quietly dump your passwords.</li>
+  <li><strong>Master password</strong>: the file itself is encrypted with it. When you open the
+  <code>.xlsx</code> in Excel, Google Sheets or LibreOffice, it prompts for your master password
+  before showing anything.</li>
+</ul>
+<div class="note">Both passwords stay in your head — neither is ever written into the file or stored
+on the phone. The phrase is never exported (it's never stored anywhere). Keep the file somewhere
+safe: even if someone gets it, they still need your master password to read it. (Created your vault
+before this feature existed? The first time you tap Export it asks you to set an export password.)</div>
+
+<h2 id="m-recover">11. Recovery</h2>
 <p>Lost the phone or cleared the browser data? As long as you remember your <strong>phrase</strong>,
 the <strong>site labels</strong> and the <strong>revision numbers</strong>, every password can be
 regenerated from scratch — they were never really "stored", just recomputed. Keeping the PC app in

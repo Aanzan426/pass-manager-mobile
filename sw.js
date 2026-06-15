@@ -4,7 +4,7 @@
  */
 "use strict";
 
-const CACHE_VERSION = "vault-v2";
+const CACHE_VERSION = "vault-v3";
 const ASSETS = [
   ".",
   "index.html",
@@ -15,6 +15,7 @@ const ASSETS = [
   "fonts/jetbrains-mono.woff2",
   "js/crypto.js",
   "js/store.js",
+  "js/export.js",
   "js/manual.js",
   "js/app.js",
   "icons/icon-192.png",
