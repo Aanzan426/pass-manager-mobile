@@ -59,6 +59,7 @@
     <header class="topbar">
         <div class="brand"><span class="mark">◆</span><span class="brand-text">VAULT</span></div>
         <nav>
+            <a href="#" class="nav-link" id="nav-export">⤓ Export</a>
             <a href="#" class="nav-link" id="nav-manual">Manual</a>
             <a href="#" class="nav-link lock-btn" id="nav-lock">Lock ⤬</a>
         </nav>
@@ -140,10 +141,47 @@
     </div>
 </div>
 
+<!-- Export password SETUP dialog (shown right after the master password on first run) -->
+<div class="modal" id="export-setup-modal" hidden>
+    <div class="modal-card">
+        <h3 id="export-setup-title">Create your export password</h3>
+        <p class="panel-sub" id="export-setup-note">This second password will be required whenever
+           you export your saved passwords to an Excel (.xlsx) file. Keep it in your head — like your
+           master password, it is never stored anywhere.</p>
+        <label>Export password</label>
+        <input type="password" id="export-setup-pass" minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+        <label>Confirm export password</label>
+        <input type="password" id="export-setup-confirm" minlength="6" placeholder="Type it again" autocomplete="new-password">
+        <div class="form-msg" id="export-setup-msg"></div>
+        <div class="btn-row">
+            <button class="btn-ghost" id="export-setup-cancel">Back</button>
+            <button class="btn-primary" id="export-setup-go">Create vault →</button>
+        </div>
+    </div>
+</div>
+
+<!-- Export VERIFY dialog (enter the 2nd password to actually export) -->
+<div class="modal" id="export-verify-modal" hidden>
+    <div class="modal-card">
+        <h3>Export to Excel</h3>
+        <p class="panel-sub">Enter your <strong>export password</strong> to create the file. The file
+           itself is encrypted with your <strong>master password</strong> — you'll be asked for the
+           master password when you open it in Excel / Sheets / LibreOffice.</p>
+        <label>Export password</label>
+        <input type="password" id="export-verify-pass" placeholder="Your export password" autocomplete="off">
+        <div class="form-msg" id="export-verify-msg"></div>
+        <div class="btn-row">
+            <button class="btn-ghost" id="export-verify-cancel">Cancel</button>
+            <button class="btn-primary" id="export-verify-go">Export →</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
 <script src="js/crypto.js"></script>
 <script src="js/store.js"></script>
+<script src="js/export.js"></script>
 <script src="js/manual.js"></script>
 <script src="js/app.js"></script>
 </body>

@@ -18,11 +18,16 @@ phone's own storage.
 - **The phrase is never stored** — you type it to generate or rotate.
 - **Rotation** bumps a revision and flags the entry **yellow** until you confirm
   you changed it on the real site (then **white**).
+- **Encrypted Excel export** (your failsafe) — export the whole vault to a real
+  password-protected `.xlsx`. A **second "export password"** (set at vault
+  creation) gates the export; the **file itself is encrypted with the master
+  password**, so opening it in Excel/Sheets/LibreOffice prompts for the master.
+  Neither password is ever stored. See "Backup" below.
 
 ## Files
 
 ```
-pass_manager_mobile/
+pass-manager-mobile/
 ├── index.html             ← the whole app (one page, all screens)
 ├── manifest.webmanifest   ← PWA metadata (name, icons, standalone)
 ├── sw.js                  ← service worker → offline caching
@@ -30,9 +35,11 @@ pass_manager_mobile/
 ├── js/
 │   ├── crypto.js          ← password derivation + encryption (port of core/crypto.py)
 │   ├── store.js           ← encrypted localStorage data layer
+│   ├── export.js          ← encrypted .xlsx export (Office agile encryption, no libs)
 │   ├── manual.js          ← in-app manual content
 │   └── app.js             ← UI controller
-└── icons/                 ← app icons (192/512 + maskable)
+├── icons/                 ← app icons (192/512 + maskable)
+└── docs/                  ← documentation (.odt) + its generator
 ```
 
 ## Running it on your phone
@@ -49,7 +56,7 @@ browser crypto + offline install to work. Two easy ways:
 
 ### Option 2 — Serve from your PC (for testing / use on home Wi-Fi)
 ```bash
-cd pass_manager_mobile
+cd pass-manager-mobile
 python3 -m http.server 8099
 ```
 On the phone (same Wi-Fi) open `http://<PC-LAN-IP>:8099`. Note: some browsers
@@ -113,8 +120,36 @@ about your usage leaves the phone.
 ## First run
 
 1. Open the app → **Create your master password**.
-2. Enter a **phrase** + **site** → Preview or **Generate & Save**.
-3. The vault lists your entries; tap a password to reveal, **Copy** to copy.
+2. **Create your export password** (the second password — pops up right after the
+   master). It will be required whenever you export to Excel. Like the master, it
+   is never stored.
+3. Enter a **phrase** + **site** → Preview or **Generate & Save**.
+4. The vault lists your entries; tap a password to reveal, **Copy** to copy.
+
+## Backup: encrypted Excel export (the failsafe)
+
+Lose your phone and you'd be locked out — so export a copy. Tap **⤓ Export** in
+the top bar:
+
+1. You're asked for your **export password** (the 2nd password). This gates the
+   action so a grabbed, unlocked phone can't dump your vault.
+2. The app builds a real **password-protected `.xlsx`** and downloads it. Columns:
+   **Site · Username/Email · Length · Note · Password**. (The phrase is *not*
+   exported — it's never stored, and exporting it would defeat the whole design.)
+3. The file is encrypted with your **master password** using standard Microsoft
+   Office "agile" encryption — so opening it in **Excel, Google Sheets or
+   LibreOffice prompts for your master password** before showing anything.
+
+It's all done in the phone, offline, with **no libraries** (`js/export.js` builds
+the `.xlsx` ZIP and the OLE2/agile-encryption container by hand, using Web Crypto).
+Verified end-to-end against `msoffcrypto-tool` + `openpyxl`: the file decrypts with
+the master password and rejects any other.
+
+> **Existing vault from before this feature?** The first time you tap Export, it
+> asks you to set an export password, then exports immediately.
+>
+> **Keep the file safe.** Anyone who gets it still needs your master password to
+> read it, but treat it like a sensitive backup regardless.
 
 ## Syncing to the PC (optional, later)
 
@@ -127,5 +162,19 @@ is the source of truth and always works offline.
 
 - Runs entirely on the phone; the phrase never leaves it and is never stored.
 - The vault is encrypted at rest; locking/closing forgets the key.
+- The master and export passwords are stored only as one-way verifiers, never in
+  plaintext. The exported `.xlsx` is encrypted with the master password; neither
+  password is written into the file.
 - Forgetting the master password means the stored list can't be decrypted — but
   any password can still be re-derived from `phrase + site + revision`.
+
+## Documentation
+
+Full A-to-Z docs live in **`docs/Vault_Mobile_Documentation.odt`** (open in
+LibreOffice Writer / any OpenDocument reader). It's generated, with no external
+dependencies, from `docs/build_docs.py` — edit that and rebuild:
+
+```bash
+cd pass-manager-mobile
+python3 docs/build_docs.py
+```
